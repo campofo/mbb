@@ -1,0 +1,146 @@
+[
+  {
+    "id": "p01",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "AnalystReadOnly s3:Get* -> allow"
+  },
+  {
+    "id": "p02",
+    "decision": "DENY",
+    "reason": "implicit_deny",
+    "_note": "no delete -> implicit deny"
+  },
+  {
+    "id": "p03",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "s3:* on public bucket -> allow"
+  },
+  {
+    "id": "p05",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "action case-insensitive -> allow"
+  },
+  {
+    "id": "p06",
+    "decision": "DENY",
+    "reason": "implicit_deny",
+    "_note": "resource case-sensitive -> implicit deny"
+  },
+  {
+    "id": "p07",
+    "decision": "DENY",
+    "reason": "explicit_deny",
+    "_note": "explicit deny overrides allow"
+  },
+  {
+    "id": "p08",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "DevOps group -> allow"
+  },
+  {
+    "id": "p09",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "DevOpsDeploy allow"
+  },
+  {
+    "id": "p13",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "both sides allow -> explicit_allow"
+  },
+  {
+    "id": "p15",
+    "decision": "DENY",
+    "reason": "implicit_deny",
+    "_note": "caller allows but trust is service-only -> implicit deny"
+  },
+  {
+    "id": "p16",
+    "decision": "DENY",
+    "reason": "implicit_deny",
+    "_note": "trust needs MFA, none -> implicit deny"
+  },
+  {
+    "id": "p17",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "with MFA -> allow"
+  },
+  {
+    "id": "p19",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "in office CIDR -> allow"
+  },
+  {
+    "id": "p20",
+    "decision": "DENY",
+    "reason": "implicit_deny",
+    "_note": "outside CIDR -> implicit deny"
+  },
+  {
+    "id": "p21",
+    "decision": "DENY",
+    "reason": "implicit_deny",
+    "_note": "missing SourceIp key -> implicit deny"
+  },
+  {
+    "id": "p22",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "right region -> allow"
+  },
+  {
+    "id": "p25",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "function:* glob -> allow"
+  },
+  {
+    "id": "p33",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "admin allow"
+  },
+  {
+    "id": "p35",
+    "decision": "DENY",
+    "reason": "implicit_deny",
+    "_note": "non-admin implicit deny"
+  },
+  {
+    "id": "p37",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "role inline allow"
+  },
+  {
+    "id": "p39",
+    "decision": "ALLOW",
+    "reason": "explicit_allow",
+    "_note": "s3:* on public covers delete -> allow"
+  },
+  {
+    "id": "p41",
+    "decision": "DENY",
+    "reason": "implicit_deny",
+    "_note": "unknown principal -> implicit deny"
+  },
+  {
+    "id": "p54",
+    "decision": "DENY",
+    "reason": "implicit_deny",
+    "_note": "policy variables are literal (out of scope): ${aws:username} != alice -> implicit deny"
+  },
+  {
+    "id": "p55",
+    "decision": "DENY",
+    "reason": "implicit_deny",
+    "_note": "literal ${aws:username} does not match bob -> implicit deny"
+  }
+]

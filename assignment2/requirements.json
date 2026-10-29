@@ -1,0 +1,47 @@
+{
+  "_comment": "A3 requirements for distribute/account.json. PUBLIC: students use this to check their account_fixed.json. designated_admins are the ONLY identities permitted to remain admin-equivalent after your fix. Every must_allow request must still be ALLOW; every must_deny request must become DENY; and no non-admin identity may have Action \"*\" or \"<service>:*\" on Resource \"*\".",
+  "designated_admins": [
+    "arn:aws:iam::123456789012:user/root_admin",
+    "arn:aws:iam::123456789012:role/OrgAdminRole"
+  ],
+  "must_allow": [
+    {"id": "ma1", "principal": "arn:aws:iam::123456789012:user/alice",
+     "action": "s3:GetObject", "resource": "arn:aws:s3:::northwind-datalake/sales/q1.csv"},
+    {"id": "ma2", "principal": "arn:aws:iam::123456789012:user/bob",
+     "action": "ec2:RunInstances", "resource": "arn:aws:ec2:us-east-1:123456789012:instance/*"},
+    {"id": "ma3", "principal": "arn:aws:iam::123456789012:user/bob",
+     "action": "iam:PassRole", "resource": "arn:aws:iam::123456789012:role/InfraAdminRole"},
+    {"id": "ma4", "principal": "arn:aws:iam::123456789012:user/dave",
+     "action": "s3:GetObject", "resource": "arn:aws:s3:::northwind-datalake/etl/run.log"},
+    {"id": "ma5", "principal": "arn:aws:iam::123456789012:user/erin",
+     "action": "s3:GetObject", "resource": "arn:aws:s3:::northwind-reports/2026/summary.pdf"},
+    {"id": "ma6", "principal": "arn:aws:iam::123456789012:user/erin",
+     "action": "lambda:InvokeFunction", "resource": "arn:aws:lambda:us-east-1:123456789012:function:report-builder"},
+    {"id": "ma7", "principal": "arn:aws:iam::123456789012:user/grace",
+     "action": "ce:GetCostAndUsage", "resource": "*"},
+    {"id": "ma8", "principal": "arn:aws:iam::123456789012:user/root_admin",
+     "action": "iam:CreateUser", "resource": "arn:aws:iam::123456789012:user/newhire"},
+    {"id": "ma9", "principal": "arn:aws:iam::123456789012:user/bob",
+     "action": "ec2:TerminateInstances", "resource": "arn:aws:ec2:us-east-1:123456789012:instance/i-0abc",
+     "context": {"aws:MultiFactorAuthPresent": "true"}}
+  ],
+  "must_deny": [
+    {"id": "md1", "principal": "arn:aws:iam::123456789012:user/erin",
+     "action": "s3:GetObject", "resource": "arn:aws:s3:::northwind-pii/customers.csv"},
+    {"id": "md2", "principal": "arn:aws:iam::123456789012:user/frank",
+     "action": "iam:AttachUserPolicy", "resource": "arn:aws:iam::123456789012:user/frank"},
+    {"id": "md3", "principal": "arn:aws:iam::123456789012:user/grace",
+     "action": "iam:AddUserToGroup", "resource": "arn:aws:iam::123456789012:group/Administrators"},
+    {"id": "md4", "principal": "arn:aws:iam::123456789012:user/judy",
+     "action": "sts:AssumeRole", "resource": "arn:aws:iam::123456789012:role/OrgAdminRole"},
+    {"id": "md5", "principal": "arn:aws:iam::123456789012:user/dave",
+     "action": "iam:UpdateAssumeRolePolicy", "resource": "arn:aws:iam::123456789012:role/LegacyBatchRole"},
+    {"id": "md6", "principal": "arn:aws:iam::123456789012:user/bob",
+     "action": "s3:DeleteBucket", "resource": "arn:aws:s3:::northwind-datalake"},
+    {"id": "md7", "principal": "arn:aws:iam::123456789012:user/erin",
+     "action": "lambda:CreateFunction", "resource": "arn:aws:lambda:us-east-1:123456789012:function:evil"},
+    {"id": "md8", "principal": "arn:aws:iam::123456789012:user/bob",
+     "action": "ec2:TerminateInstances", "resource": "arn:aws:ec2:us-east-1:123456789012:instance/i-0abc",
+     "context": {}}
+  ]
+}
