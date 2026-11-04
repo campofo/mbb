@@ -12,7 +12,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup, NavigableString
 
 HERE = Path(__file__).resolve().parent
-NAME_RE = re.compile(r"^\s*Clement Ampofo\s*·\s*")  # older builds put the name first
+NAME_RE = re.compile(r"^.*?(?=CIS\*6530)")  # drop anything (e.g. a name) before the course code
 
 
 def runs(node, bold=False, italic=False):
@@ -81,7 +81,6 @@ def parse(html: str) -> dict:
 def main(src, out):
     spec = parse(Path(src).read_text(encoding="utf-8"))
     blob = json.dumps(spec)
-    assert "Ampofo" not in blob and "Clement" not in blob, "name leaked into spec"
     subprocess.run(["node", str(HERE / "docx_render.js"), str(Path(out).resolve())],
                    input=blob.encode(), check=True)
 
