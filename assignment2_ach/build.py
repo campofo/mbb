@@ -1,6 +1,6 @@
 """Build the A2 submission PDF from ach_matrix.csv + report_body.html.
 
-Usage: python3 build.py   (needs a Chrome/Chromium binary; set CHROME)
+Usage: python3 build.py   (needs bs4 and node with the `docx` package)
 """
 import csv
 import html
@@ -8,9 +8,7 @@ import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-STUDENT = "Clement Ampofo"
-PDF_NAME = "Ampofo_Clement_A2.pdf"
-CHROME = "/opt/pw-browsers/chromium"  # any Chrome/Chromium binary
+OUT_NAME = "A2.docx"
 
 HYP = [
     ("H1", "State-linked espionage"),
@@ -66,7 +64,7 @@ def build():
     assert 1200 <= wc <= 1800, f"word count {wc} out of range"
     assumptions = "".join(f"<li><strong>{k} [ADDED, student assumption]:</strong> {v}</li>"
                           for k, v in ASSUMPTIONS)
-    page = f"""<!doctype html><html><head><meta charset="utf-8"><title>{STUDENT} A2</title>
+    page = f"""<!doctype html><html><head><meta charset="utf-8"><title>CIS*6530 A2</title>
 <style>
 @page {{ size: Letter; margin: 0.8in 0.85in; }}
 @page wide {{ size: Letter landscape; margin: 0.5in 0.55in; }}
@@ -95,7 +93,7 @@ table.mx {{ border-collapse: collapse; width: 100%; font-size: 7.6pt; line-heigh
 </style></head><body>
 <div class="wide">
 <h1>Assignment 2: Analysis of Competing Hypotheses: Aurora Biotech Labs</h1>
-<div class="meta">{STUDENT} &middot; CIS*6530 Cyber Threat Intelligence and Adversarial Risk Analysis &middot; Deliverable 2.1: ACH matrix</div>
+<div class="meta">CIS*6530 Cyber Threat Intelligence and Adversarial Risk Analysis &middot; Deliverable 2.1: ACH matrix</div>
 <div class="key"><strong>Key:</strong> C = Consistent &middot; I = Inconsistent &middot; NA = Not applicable / diagnostic-neutral.
 Rows 1 to 11 are scenario evidence (all retained). Row E12 (shaded yellow) and assumptions A1 to A4 are the student's own additions, not scenario facts.
 The most diagnostic items are 6, 9 and 4 with E12 (report section 3). Items 1, 7, 8, 10 and 11 are consistent with all or nearly all hypotheses and confirm very little.</div>
@@ -104,18 +102,16 @@ The most diagnostic items are 6, 9 and 4 with E12 (report section 3). Items 1, 7
 </div>
 <div class="brk">
 <h1>Deliverable 2.2: Analytic report</h1>
-<div class="meta">{STUDENT} &middot; CIS*6530 &middot; Assignment 2</div>
+<div class="meta">CIS*6530 &middot; Assignment 2</div>
 <div class="wc"><strong>Word count: {wc:,}</strong> (body text only; excludes the ACH matrix, section headers, and this line)</div>
 {body}
 </div>
 </body></html>"""
     (HERE / "submission.html").write_text(page)
 
-    import subprocess
-    subprocess.run([CHROME, "--headless", "--no-sandbox", "--disable-gpu",
-                    "--no-pdf-header-footer", f"--print-to-pdf={HERE / PDF_NAME}",
-                    (HERE / "submission.html").as_uri()], check=True, capture_output=True)
-    print(f"word count = {wc}; wrote {PDF_NAME}")
+    from make_docx import main as to_docx
+    to_docx(HERE / "submission.html", HERE / OUT_NAME)
+    print(f"word count = {wc}; wrote {OUT_NAME}")
 
 
 if __name__ == "__main__":
