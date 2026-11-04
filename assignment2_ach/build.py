@@ -22,13 +22,13 @@ HYP = [
 
 ASSUMPTIONS = [
     ("A1", "The workstation hosting the RAT (item 2) is <em>not</em> confirmed to be the resigning "
-           "scientist's; the scenario says only &ldquo;the same research division.&rdquo; Treated as unknown."),
+           "scientist's; the scenario says only &quot;the same research division,&quot; so I treat the owner as unknown."),
     ("A2", "The phished scientist (item 3) and the resigning scientist (item 1) are two different people, "
            "as item 10 lists them as two separate anomalous accounts."),
     ("A3", "Reconstructed timeline (day 0 = first evening of bulk download): ACL misconfigured from ~day &minus;42; "
            "phishing ~day &minus;21; phished credentials reused ~day &minus;19; RAT installed ~day &minus;10; "
-           "download days 0&ndash;1; resignation ~day 3. The ACL fault therefore predates the intrusion."),
-    ("A4", "The &ldquo;previously unseen device&rdquo; in item 3 has not been verified as a new personal device of the "
+           "download on days 0 and 1; resignation ~day 3. The ACL fault therefore predates the intrusion."),
+    ("A4", "The &quot;previously unseen device&quot; in item 3 has not been verified as a new personal device of the "
            "phished scientist; if it were, the H4 rating on item 3 would soften to C."),
 ]
 
@@ -95,15 +95,15 @@ table.mx {{ border-collapse: collapse; width: 100%; font-size: 7.6pt; line-heigh
 </style></head><body>
 <div class="wide">
 <h1>Assignment 2: Analysis of Competing Hypotheses: Aurora Biotech Labs</h1>
-<div class="meta">{STUDENT} &middot; CIS*6530 Cyber Threat Intelligence and Adversarial Risk Analysis &middot; Deliverable 2.1: ACH Matrix</div>
+<div class="meta">{STUDENT} &middot; CIS*6530 Cyber Threat Intelligence and Adversarial Risk Analysis &middot; Deliverable 2.1: ACH matrix</div>
 <div class="key"><strong>Key:</strong> C = Consistent &middot; I = Inconsistent &middot; NA = Not applicable / diagnostic-neutral.
-Rows 1&ndash;11 are scenario evidence (all retained). Row E12 (shaded yellow) and assumptions A1&ndash;A4 are the student's own additions, not scenario facts.
-Most diagnostic items: <strong>6</strong>, <strong>9</strong>, and <strong>4/E12</strong> (see report &sect;3). Items consistent with all or nearly all hypotheses (7, 8, 1, 10, 11) confirm very little.</div>
+Rows 1 to 11 are scenario evidence (all retained). Row E12 (shaded yellow) and assumptions A1 to A4 are the student's own additions, not scenario facts.
+The most diagnostic items are 6, 9 and 4 with E12 (report section 3). Items 1, 7, 8, 10 and 11 are consistent with all or nearly all hypotheses and confirm very little.</div>
 {matrix_html()}
-<div class="small"><p style="margin-top:6pt"><strong>Student-added assumptions (not scenario facts):</strong></p><ul>{assumptions}</ul></div>
+<div class="small"><p style="margin-top:6pt"><strong>Student-added assumptions (not scenario facts)</strong></p><ul>{assumptions}</ul></div>
 </div>
 <div class="brk">
-<h1>Deliverable 2.2: Analytic Report</h1>
+<h1>Deliverable 2.2: Analytic report</h1>
 <div class="meta">{STUDENT} &middot; CIS*6530 &middot; Assignment 2</div>
 <div class="wc"><strong>Word count: {wc:,}</strong> (body text only; excludes the ACH matrix, section headers, and this line)</div>
 {body}
