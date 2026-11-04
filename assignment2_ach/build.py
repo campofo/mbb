@@ -64,7 +64,7 @@ def build():
     body = (HERE / "report_body.html").read_text()
     wc = word_count(body)
     assert 1200 <= wc <= 1800, f"word count {wc} out of range"
-    assumptions = "".join(f"<li><strong>{k} [ADDED &ndash; student assumption]:</strong> {v}</li>"
+    assumptions = "".join(f"<li><strong>{k} [ADDED, student assumption]:</strong> {v}</li>"
                           for k, v in ASSUMPTIONS)
     page = f"""<!doctype html><html><head><meta charset="utf-8"><title>{STUDENT} A2</title>
 <style>
@@ -94,7 +94,7 @@ table.mx {{ border-collapse: collapse; width: 100%; font-size: 7.6pt; line-heigh
 .brk {{ break-before: page; }}
 </style></head><body>
 <div class="wide">
-<h1>Assignment 2 &mdash; Analysis of Competing Hypotheses: Aurora Biotech Labs</h1>
+<h1>Assignment 2: Analysis of Competing Hypotheses: Aurora Biotech Labs</h1>
 <div class="meta">{STUDENT} &middot; CIS*6530 Cyber Threat Intelligence and Adversarial Risk Analysis &middot; Deliverable 2.1: ACH Matrix</div>
 <div class="key"><strong>Key:</strong> C = Consistent &middot; I = Inconsistent &middot; NA = Not applicable / diagnostic-neutral.
 Rows 1&ndash;11 are scenario evidence (all retained). Row E12 (shaded yellow) and assumptions A1&ndash;A4 are the student's own additions, not scenario facts.
