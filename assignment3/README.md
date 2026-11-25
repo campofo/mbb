@@ -8,7 +8,7 @@ Due 27 November 2026. Individual submission: one PDF.
 | `content.py`, `build.py`, `tools/` | Source and build: `python3 build.py` regenerates both files and checks the 2,000–2,800 word limit |
 | `brief/` | The brief, rubric and research guide |
 
-The word count for Parts A–D is 2,188 (2,460 if the ATT&CK and timeline tables are counted). The Diamond Model and kill
+The word count for Parts A to D is 2,165 (2,441 if the ATT&CK and timeline tables are counted). The Diamond Model and kill
 chain use one incident: the AT&T Snowflake theft of April 2024.
 
 ## Before submitting
