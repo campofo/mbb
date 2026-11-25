@@ -4,7 +4,7 @@ Due 30 November 2026. Group submission: one PDF report plus a recorded video of 
 
 | File | What it is |
 |---|---|
-| `A4_RansomHub_Report.pdf` / `.docx` | The written report (2,401 words of body text; 2,918 including the Diamond and kill-chain tables) |
+| `A4_RansomHub_Report.pdf` / `.docx` | The written report (2,392 words of body text; 2,910 including the Diamond and kill-chain tables) |
 | `presentation/A4_RansomHub_Presentation.pptx` | 10-slide deck with a speaker tag on every slide and narration in the speaker notes |
 | `presentation/A4_Presentation_Script.docx` | The narration as a recording script, split into three member segments |
 | `content.py`, `build.py`, `tools/` | Source and build: `python3 build.py` regenerates the report and checks the word count |

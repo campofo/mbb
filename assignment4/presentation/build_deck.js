@@ -200,7 +200,7 @@ events.forEach(([d, t], i) => {
 });
 card(s, 7.3, 1.5, 5.4, 4.9, "Our judgement (moderate confidence)",
   "No action ever hit RansomHub's core. Takedowns of rivals supplied its affiliates; the advisory raised defenders' costs; "
-  + "affiliate charges came after it had folded. Its affiliates moved to DragonForce and Qilin: displacement, not degradation.",
+  + "affiliate charges came after it had folded. Its affiliates simply moved to DragonForce and Qilin.",
   { fill: THEME.colors.dk1, headColor: C.accent2, bodyColor: C.background1, bodySize: 16 });
 source(s, "Sources: The Register (28 Dec 2024); CISA AA24-242A; The Hacker News (Apr 2025, Jul 2024); US DOJ (Sep 2025)");
 notes(s, 8);
