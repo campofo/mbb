@@ -1,230 +1,274 @@
-// Builds the A4 presentation deck: node build_deck.js  (needs pptxgenjs)
+// Builds the A4 presentation under academic-presentation standards:
+// action titles, one exhibit per slide, >=20pt body, <=~40 body words, in-slide citations,
+// conclusions slide last in the main deck, then references and appendix.
+// Usage: node build_deck.js   (needs pptxgenjs; set PPTX_SKILL_DIR to apply the theme)
 const path = require("path");
 const pptxgen = require("pptxgenjs");
 const script = require("./script.json");
 
-const SKILL = process.env.PPTX_SKILL_DIR;
-const THEME = {
-  name: "RansomHub Brief", headFontFace: "Cambria", bodyFontFace: "Calibri",
-  colors: { dk1: "1B1F2A", lt1: "FFFFFF", dk2: "2B3140", lt2: "F3F4F7", accent1: "C8102E", accent2: "E8A33D",
-    accent3: "4A5568", accent4: "8C1C2B", accent5: "6B7A90", accent6: "2E7D5B", hlink: "C8102E", folHlink: "8C1C2B" },
-};
+const COL = { bg: "FFFFFF", primary: "1F4E79", accent: "2E75B6", alert: "C00000", body: "2D2D2D",
+  muted: "6B6B6B", soft: "EBF3FA", rule: "D0D7DE" };
+const FONT = "Arial";
+const THEME = { name: "Academic", headFontFace: FONT, bodyFontFace: FONT,
+  colors: { dk1: COL.body, lt1: "FFFFFF", dk2: COL.primary, lt2: "F2F2F2", accent1: COL.primary, accent2: COL.accent,
+    accent3: COL.alert, accent4: "7F7F7F", accent5: "A5A5A5", accent6: "5B9BD5", hlink: COL.accent, folHlink: COL.primary } };
+
 const pres = new pptxgen();
-pres.layout = "LAYOUT_WIDE"; // 13.33 x 7.5
+pres.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 in
 pres.title = "RansomHub: Ransomware Campaign Intelligence";
-pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
-const C = pres.SchemeColor;
-const W = 13.33;
+pres.theme = { headFontFace: FONT, bodyFontFace: FONT };
+const M = 0.6, W = 13.33 - 2 * M;
 
-pres.defineSlideMaster({
-  title: "DARK", background: { color: THEME.colors.dk1 },
-  objects: [{ placeholder: { options: { name: "title", type: "title", x: 0.7, y: 2.2, w: 11.9, h: 1.6,
-    fontSize: 44, bold: true, color: C.background1, fontFace: "Cambria", valign: "bottom" }, text: "" } }],
-});
-pres.defineSlideMaster({
-  title: "CONTENT", background: { color: THEME.colors.lt1 },
-  objects: [
-    { placeholder: { options: { name: "title", type: "title", x: 0.6, y: 0.35, w: 9.6, h: 0.9,
-      fontSize: 28, bold: true, color: C.text1, fontFace: "Cambria", valign: "middle", align: "left" }, text: "" } },
-  ],
-  slideNumber: { x: 12.4, y: 7.0, w: 0.6, h: 0.3, fontSize: 10, color: "6B7A90" },
-});
+function base(slideIdx, title, opts = {}) {
+  const s = pres.addSlide();
+  s.background = { color: COL.bg };
+  s.addText(title, { x: M, y: 0.3, w: W - 2.4, h: 1.1, fontFace: FONT, fontSize: 26, bold: true,
+    color: COL.primary, valign: "top", isTextBox: true, margin: 0 });
+  const sp = script.slides[slideIdx];
+  if (sp && !opts.noSpeaker) s.addText("Speaker: " + sp.speaker, { x: 13.33 - M - 2.2, y: 0.32, w: 2.2, h: 0.4,
+    fontFace: FONT, fontSize: 13, color: sp.handover ? COL.alert : COL.muted, bold: !!sp.handover, align: "right",
+    isTextBox: true, margin: 0 });
+  if (sp) s.addNotes(sp.speaker + ": " + sp.text);
+  s.addText(String(pres.slides.length), { x: 13.33 - M - 0.6, y: 7.0, w: 0.6, h: 0.3, fontFace: FONT, fontSize: 12,
+    color: COL.muted, align: "right", isTextBox: true, margin: 0 });
+  return s;
+}
+function cite(s, text) {
+  s.addText(text, { x: M, y: 6.95, w: W - 1.0, h: 0.35, fontFace: FONT, fontSize: 12, color: COL.muted,
+    isTextBox: true, margin: 0 });
+}
+function bullets(s, items, x, y, w, h, size = 20) {
+  // One plain run per bullet: pptxgenjs drops or splits bullets on multi-run paragraphs.
+  s.addText(items.map((t, i) => ({ text: Array.isArray(t) ? t.map(p => p.text).join("") : t,
+    options: { bullet: true, breakLine: i < items.length - 1 } })), { x, y, w, h, fontFace: FONT, fontSize: size, color: COL.body, valign: "top", paraSpaceAfter: 14,
+    isTextBox: true, margin: 0 });
+}
+function header(s, text, x, y, w) {
+  s.addText(text, { x, y, w, h: 0.45, fontFace: FONT, fontSize: 20, bold: true, color: COL.accent, isTextBox: true, margin: 0 });
+}
+function table(s, rows, x, y, w, colW, size = 16, focusRow = -1) {
+  const head = rows[0].map(t => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: COL.primary } } }));
+  const body = rows.slice(1).map((r, i) => r.map((t, j) => ({ text: t, options: {
+    bold: j === 0 || i === focusRow, color: i === focusRow ? COL.alert : COL.body,
+    fill: { color: i === focusRow ? "FBE9E9" : (i % 2 ? "F6F8FA" : "FFFFFF") } } })));
+  s.addTable([head, ...body], { x, y, w, colW, fontFace: FONT, fontSize: size, valign: "middle",
+    border: { type: "solid", pt: 0.75, color: COL.rule }, margin: [4, 6, 4, 6] });
+}
 
-function speakerTag(slide, who, dark) {
-  slide.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 10.45, y: 0.5, w: 2.3, h: 0.5, rectRadius: 0.25,
-    fill: { color: dark ? C.accent1 : C.background2 }, line: { color: dark ? C.accent1 : C.background2 }, objectName: "speaker" });
-  slide.addText("Speaker: " + who, { x: 10.45, y: 0.5, w: 2.3, h: 0.5, align: "center", fontSize: 13, bold: true,
-    color: dark ? C.background1 : C.accent1, isTextBox: true, margin: 0 });
-}
-function source(slide, text) {
-  slide.addText(text, { x: 0.6, y: 6.95, w: 11.5, h: 0.35, fontSize: 10, color: "6B7A90", isTextBox: true, margin: 0 });
-}
-function card(slide, x, y, w, h, head, body, opts = {}) {
-  slide.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.12,
-    fill: { color: opts.fill || C.background2 }, line: { color: opts.fill || C.background2 }, objectName: "card" });
-  slide.addText([
-    { text: head, options: { bold: true, fontSize: opts.headSize || 20, color: opts.headColor || C.accent1, breakLine: true } },
-    { text: body, options: { fontSize: opts.bodySize || 16, color: opts.bodyColor || C.text1 } },
-  ], { x: x + 0.2, y: y + 0.15, w: w - 0.4, h: h - 0.3, valign: "top", isTextBox: true, margin: 0, paraSpaceAfter: 6 });
-}
-function stat(slide, x, y, big, label, dark) {
-  slide.addText(big, { x, y, w: 3.8, h: 1.2, fontSize: 54, bold: true, fontFace: "Cambria",
-    color: dark ? C.accent2 : C.accent1, isTextBox: true, margin: 0 });
-  slide.addText(label, { x, y: y + 1.2, w: 3.6, h: 0.9, fontSize: 15, color: dark ? C.background1 : C.text1,
-    isTextBox: true, margin: 0, valign: "top" });
-}
-const notes = (slide, i) => slide.addNotes(script.slides[i].speaker + ": " + script.slides[i].text);
-
-// 1. Title + members
-pres.addSection({ title: "Introduction" });
-let s = pres.addSlide({ masterName: "DARK", sectionTitle: "Introduction" });
-s.addText("RansomHub: the RaaS that rose on others' takedowns", { placeholder: "title" });
-s.addText("CIS*6530 Assignment 4 · Ransomware Campaign Intelligence Investigation", { x: 0.7, y: 3.9, w: 11.9, h: 0.5,
-  fontSize: 18, color: C.accent2, isTextBox: true, margin: 0 });
+// 1. Title (dark)
+let s = pres.addSlide();
+s.background = { color: COL.primary };
+s.addText("RansomHub rose on its rivals' takedowns and collapsed without a police action", { x: M + 0.1, y: 1.2,
+  w: 11.5, h: 2.0, fontFace: FONT, fontSize: 36, bold: true, color: "FFFFFF", valign: "top", isTextBox: true, margin: 0 });
+s.addText("A ransomware campaign intelligence investigation · CIS*6530 Assignment 4 · November 2026", { x: M + 0.1, y: 3.4,
+  w: 11.5, h: 0.5, fontFace: FONT, fontSize: 18, color: "CFE0F1", isTextBox: true, margin: 0 });
 s.addText(script.members.map((m, i) => ({ text: m, options: { breakLine: i < script.members.length - 1 } })),
-  { x: 0.7, y: 4.7, w: 11.9, h: 1.5, fontSize: 16, color: C.background1, isTextBox: true, margin: 0, paraSpaceAfter: 6 });
-notes(s, 0);
+  { x: M + 0.1, y: 4.4, w: 11.5, h: 1.6, fontFace: FONT, fontSize: 18, color: "FFFFFF", paraSpaceAfter: 8,
+    isTextBox: true, margin: 0 });
+s.addNotes(script.slides[0].speaker + ": " + script.slides[0].text);
 
-// 2. Bottom line stats
-pres.addSection({ title: "Adversary and lifecycle" });
-s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Adversary and lifecycle" });
-s.addText("Bottom line: a brand, a workforce, and a six-day window", { placeholder: "title" });
-speakerTag(s, script.slides[1].speaker);
-stat(s, 0.6, 1.7, "210+", "victims in RansomHub's first six months (Feb–Aug 2024)");
-stat(s, 4.75, 1.7, "118 h", "from RDP password spray to domain-wide encryption in our case");
-stat(s, 8.9, 1.7, "Apr 2025", "1 April: infrastructure went dark; no law-enforcement action claimed");
-card(s, 0.6, 4.6, 12.1, 1.9, "What this means",
-  "RansomHub was a wrapper around a mobile affiliate workforce. The defender's leverage is in the long, noisy "
-  + "intrusion before encryption, not in tracking the brand name.", { headSize: 20, bodySize: 18 });
-source(s, "Sources: CISA AA24-242A; The DFIR Report (30 Jun 2025); The Hacker News (30 Apr 2025)");
-notes(s, 1);
+// 2. Research question
+s = base(1, "Our question: how did RansomHub operate, and did law enforcement change it?");
+s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 1.4, y: 1.8, w: 10.5, h: 2.1, rectRadius: 0.1,
+  fill: { color: COL.soft }, line: { color: COL.accent, width: 1.5 } });
+s.addText("How did RansomHub's affiliates break in, extort and negotiate, and did any law-enforcement action degrade "
+  + "the operation, or did its affiliates simply move to other brands?", { x: 1.7, y: 1.95, w: 9.9, h: 1.8,
+  fontFace: FONT, fontSize: 22, color: COL.primary, valign: "middle", isTextBox: true, margin: 0 });
+bullets(s, [[{ text: "Evidence: ", bold: true }, { text: "one fully logged intrusion (Nov 2024) plus 18 public sources" }],
+  [{ text: "Methods: ", bold: true }, { text: "Diamond Model, kill chain, before/after comparison of each action" }]],
+  M, 4.4, W, 2.0);
+cite(s, "Sources listed on the References slide");
 
-// 3. Diamond model
-s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Adversary and lifecycle" });
-s.addText("One incident, four vertices: the November 2024 RDP intrusion", { placeholder: "title" });
-speakerTag(s, script.slides[2].speaker);
-s.addShape(pres.shapes.DIAMOND, { x: 5.17, y: 2.45, w: 3.0, h: 3.0, fill: { color: C.text1 }, line: { color: C.text1 }, objectName: "diamond" });
-s.addText("RansomHub\naffiliate case", { x: 5.17, y: 3.45, w: 3.0, h: 1.0, align: "center", fontSize: 15, bold: true,
-  color: C.background1, isTextBox: true, margin: 0 });
-card(s, 0.6, 1.5, 4.3, 2.3, "Adversary", "Unnamed affiliate working from a VirtualBox VM (\"WINVM\", Splashtop name \"johnattan\")");
-card(s, 8.43, 1.5, 4.3, 2.3, "Capability", "Password spray, Mimikatz DCSync, Atera + Splashtop, Rclone, amd64.exe -pass");
-card(s, 0.6, 4.2, 4.3, 2.3, "Infrastructure", "Spray 185.190.24.54/.33 · logon 164.138.90.2 · exfil 38.180.245.207:443 (SFTP)");
-card(s, 8.43, 4.2, 4.3, 2.3, "Victim", "Multi-domain AD, exposed RDP, Hyper-V, Veeam backups. Sector withheld");
-source(s, "Source: The DFIR Report, \"Hide Your RDP: Password Spray Leads to RansomHub Deployment\" (30 Jun 2025)");
-notes(s, 2);
+// 3. Context timeline
+s = base(2, "Takedowns of ALPHV and LockBit handed RansomHub its first affiliates");
+const tl = [["Dec 2023", "FBI disrupts ALPHV"], ["Feb 2024", "Cronos hits LockBit;\nRansomHub launches"],
+  ["Aug 2024", "210+ victims;\nFBI/CISA advisory"], ["Apr 2025", "Infrastructure\ngoes dark"]];
+s.addShape(pres.shapes.LINE, { x: 1.0, y: 3.0, w: 11.3, h: 0, line: { color: COL.rule, width: 3 } });
+tl.forEach(([d, t], i) => {
+  const x = 0.8 + i * 3.25, hot = i === 2;
+  s.addShape(pres.shapes.OVAL, { x: x + 1.1, y: 2.78, w: 0.45, h: 0.45, fill: { color: hot ? COL.alert : COL.primary },
+    line: { color: "FFFFFF", width: 2 } });
+  s.addText(d, { x, y: 2.05, w: 2.7, h: 0.5, align: "center", fontFace: FONT, fontSize: 20, bold: true,
+    color: hot ? COL.alert : COL.primary, isTextBox: true, margin: 0 });
+  s.addText(t, { x, y: 3.45, w: 2.7, h: 1.0, align: "center", fontFace: FONT, fontSize: 17, color: COL.body,
+    isTextBox: true, margin: 0 });
+});
+s.addText("Six months from launch to the largest victim count of any RaaS brand in 2024", { x: 0.6, y: 4.85, w: 12.1,
+  h: 0.6, align: "center", fontFace: FONT, fontSize: 20, italic: true, color: COL.alert, isTextBox: true, margin: 0 });
+cite(s, "CISA AA24-242A (2024); The Register (28 Dec 2024); ESET (2025); The Hacker News (30 Apr 2025)");
 
-// 4. Lifecycle timeline
-s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Adversary and lifecycle" });
-s.addText("Six days inside before a single file was encrypted", { placeholder: "title" });
-speakerTag(s, script.slides[3].speaker);
-const days = [
-  ["Day 1", "RDP spray → valid logon; RDP to DCs; Mimikatz DCSync"],
-  ["Day 2", "IP Scanner + NetScan; Atera on backup servers"],
-  ["Day 3", "Rclone over SFTP: 2.03 GB in ~40 min"],
-  ["Day 4", "Quiet: Rclone traces cleaned up"],
-  ["Day 5", "Back via Splashtop; passwords reset"],
-  ["Day 6", "amd64.exe over SMB; VMs stopped; shadows + logs wiped; encryption"],
-];
-s.addShape(pres.shapes.LINE, { x: 0.9, y: 2.55, w: 11.6, h: 0, line: { color: C.accent3, width: 2 } });
+// 4. Methods: Diamond
+s = base(3, "One fully logged intrusion anchors our Diamond Model");
+s.addShape(pres.shapes.DIAMOND, { x: 2.35, y: 2.55, w: 2.5, h: 2.5, fill: { color: COL.soft }, line: { color: COL.accent, width: 2 } });
+s.addText("Nov 2024\nintrusion", { x: 2.35, y: 3.35, w: 2.5, h: 0.9, align: "center", valign: "middle", fontFace: FONT,
+  fontSize: 16, bold: true, color: COL.primary, isTextBox: true, margin: 0 });
+const dv = [["Adversary", "unnamed affiliate on a VM", 2.1, 1.55, 3.0], ["Infrastructure", "spray, logon and exfil IPs", 0.45, 3.35, 1.85],
+  ["Capability", "spray, Mimikatz, RMM, Rclone", 4.9, 3.35, 2.1], ["Victim", "multi-domain AD, exposed RDP", 2.1, 5.15, 3.0]];
+dv.forEach(([h, t, x, y, w]) => s.addText([{ text: h, options: { bold: true, color: COL.primary, breakLine: true } },
+  { text: t, options: { color: COL.body } }], { x, y, w, h: 0.95, align: "center", valign: "middle", fontFace: FONT, fontSize: 16,
+  isTextBox: true, margin: 0 }));
+header(s, "Why this case", 7.4, 1.7, 5.3);
+bullets(s, ["Every kill-chain stage in the victim's own logs", "Hashed tools, measured 2.03 GB exfiltration",
+  [{ text: "Gap: ", bold: true }, { text: "affiliate identity and the ransom demand" }]], 7.4, 2.3, 5.3, 3.6);
+cite(s, "The DFIR Report, \"Hide Your RDP: Password Spray Leads to RansomHub Deployment\" (30 Jun 2025)");
+
+// 5. Results: six days
+s = base(4, "The intruder spent six days inside before encrypting anything");
+const days = [["Day 1", "Spray succeeds;\nDCSync"], ["Day 2", "Scans;\nAtera installed"], ["Day 3", "2.03 GB\nexfiltrated"],
+  ["Day 4", "Clean-up"], ["Day 5", "Back via\nSplashtop"], ["Day 6", "Encryption"]];
+s.addShape(pres.shapes.LINE, { x: 0.9, y: 2.55, w: 7.2, h: 0, line: { color: COL.rule, width: 3 } });
 days.forEach(([d, t], i) => {
-  const x = 0.6 + i * 2.05;
-  s.addShape(pres.shapes.OVAL, { x: x + 0.65, y: 2.3, w: 0.5, h: 0.5, fill: { color: i === 5 ? C.accent1 : C.text1 },
-    line: { color: C.background1, width: 2 }, objectName: "dot" + i });
-  s.addText(d, { x, y: 1.65, w: 1.8, h: 0.5, align: "center", fontSize: 16, bold: true, color: C.text1, isTextBox: true, margin: 0 });
-  s.addText(t, { x, y: 3.0, w: 1.85, h: 2.1, fontSize: 14, color: C.text1, valign: "top", isTextBox: true, margin: 0 });
+  const x = 0.6 + i * 1.3, hot = i === 5;
+  s.addShape(pres.shapes.OVAL, { x: x + 0.4, y: 2.35, w: 0.4, h: 0.4, fill: { color: hot ? COL.alert : COL.primary },
+    line: { color: "FFFFFF", width: 2 } });
+  s.addText(d, { x, y: 1.75, w: 1.2, h: 0.45, align: "center", fontFace: FONT, fontSize: 17, bold: true,
+    color: hot ? COL.alert : COL.primary, isTextBox: true, margin: 0 });
+  s.addText(t, { x: x - 0.05, y: 2.95, w: 1.3, h: 1.1, align: "center", fontFace: FONT, fontSize: 16, color: COL.body,
+    isTextBox: true, margin: 0 });
 });
-card(s, 0.6, 5.3, 12.1, 1.35, "Detection windows",
-  "Failed-logon burst (day 1) · DCSync from a non-DC (day 1) · new RMM installs (day 2) · Rclone / SFTP on 443 (day 3)",
-  { headSize: 16, bodySize: 15 });
-source(s, "Source: The DFIR Report (30 Jun 2025). Recon and the demand are not evidenced in the source.");
-notes(s, 3);
+s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.6, y: 4.5, w: 7.5, h: 1.0, rectRadius: 0.08, fill: { color: "FBE9E9" },
+  line: { color: COL.alert, width: 1 } });
+s.addText("118 hours from first logon to ransomware", { x: 0.6, y: 4.5, w: 7.5, h: 1.0, align: "center", valign: "middle",
+  fontFace: FONT, fontSize: 22, bold: true, color: COL.alert, isTextBox: true, margin: 0 });
+header(s, "Detection chances", 8.7, 1.7, 4.0);
+bullets(s, ["Failed-logon burst", "DCSync from a non-DC", "New RMM installs", "Rclone/SFTP on port 443"], 8.7, 2.3, 4.0, 3.6);
+cite(s, "The DFIR Report (30 Jun 2025)");
 
-// 5. Payload behaviour
-pres.addSection({ title: "Malware, victims, negotiation" });
-s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Malware, victims, negotiation" });
-s.addText("The payload: fast, password-locked and anti-recovery", { placeholder: "title" });
-speakerTag(s, script.slides[4].speaker, true);
-card(s, 0.6, 1.5, 3.9, 4.0, "Encrypts",
-  "Curve25519 key pair per victim; AES-256 / ChaCha20 for files. Intermittent mode: 1 MB on, 2 MB skipped. "
-  + "Random extension; \"How To Restore Your Files.txt\" with no amount", { bodySize: 18 });
-card(s, 4.72, 1.5, 3.9, 4.0, "Prevents recovery",
-  "Stops Hyper-V VMs and ~30 processes; vssadmin Delete Shadows /all /quiet; wevtutil clears Security, System, Application logs", { bodySize: 18 });
-card(s, 8.84, 1.5, 3.9, 4.0, "Evades and spreads",
-  "Will not run without -pass. Self-propagates over SMB as random six-letter services. Operators' own EDRKillShifter "
-  + "kills security tools via a vulnerable driver", { bodySize: 18 });
-source(s, "Sources: CISA AA24-242A; Group-IB (28 Aug 2024); ESET (26 Mar 2025); The DFIR Report (30 Jun 2025)");
-notes(s, 4);
+// 6. Results: payload flow
+s = base(5, "The encryptor removes every recovery route before it encrypts");
+const steps = ["Stop VMs and ~30 processes", "Delete shadow copies", "Clear event logs", "Encrypt (Curve25519 + AES/ChaCha20)"];
+steps.forEach((t, i) => {
+  const x = 0.6 + i * 3.1, hot = i === 3;
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.9, w: 2.7, h: 1.5, rectRadius: 0.08,
+    fill: { color: hot ? "FBE9E9" : COL.soft }, line: { color: hot ? COL.alert : COL.accent, width: 1.5 } });
+  s.addText(t, { x: x + 0.1, y: 1.9, w: 2.5, h: 1.5, align: "center", valign: "middle", fontFace: FONT, fontSize: 18,
+    bold: hot, color: hot ? COL.alert : COL.primary, isTextBox: true, margin: 0 });
+  if (i < 3) s.addShape(pres.shapes.RIGHT_ARROW, { x: x + 2.73, y: 2.45, w: 0.34, h: 0.4, fill: { color: COL.muted }, line: { color: COL.muted } });
+});
+bullets(s, [[{ text: "Locked: ", bold: true }, { text: "will not run without -pass" }],
+  [{ text: "Fast: ", bold: true }, { text: "large files encrypted 1 MB on, 2 MB skipped" }],
+  [{ text: "Blinding: ", bold: true }, { text: "operators' EDRKillShifter disables security tools" }]], M, 4.0, W, 2.6);
+cite(s, "CISA AA24-242A (2024); Group-IB (2024); ESET (2025); The DFIR Report (2025)");
 
-// 6. RaaS structure
-s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Malware, victims, negotiation" });
-s.addText("Why affiliates came: a 90/10 split and their own wallets", { placeholder: "title" });
-speakerTag(s, script.slides[5].speaker);
+// 7. Results: 90/10
+s = base(6, "Affiliates kept 90% of each ransom and held the wallet");
 s.addChart(pres.charts.DOUGHNUT, [{ name: "Split", labels: ["Affiliate", "Operator"], values: [90, 10] }], {
-  x: 0.6, y: 1.5, w: 4.6, h: 4.8, holeSize: 60, chartColors: [THEME.colors.accent1, THEME.colors.accent3],
-  showPercent: true, showLegend: true, legendPos: "b", legendFontFace: "+mn-lt", legendFontSize: 14,
-  dataLabelColor: "FFFFFF", dataLabelFontSize: 16, dataLabelFontFace: "+mn-lt",
-  showTitle: true, title: "Share of each ransom", titleFontFace: "+mn-lt", titleFontSize: 16, titleColor: THEME.colors.dk1,
-});
-card(s, 5.6, 1.5, 7.1, 1.5, "Operators supply", "Go lockers for Windows, Linux and ESXi; EDRKillShifter; a panel with chats; a Tor leak site");
-card(s, 5.6, 3.15, 7.1, 1.5, "Affiliates bring", "Access, tools, exfiltration infrastructure and the negotiation, and they move between brands");
-card(s, 5.6, 4.8, 7.1, 1.6, "House rules", "No CIS, Cuba, North Korea or China; no re-attacking payers; non-profit hospitals: data extortion only; $5,000 deposit from June 2024");
-source(s, "Sources: Group-IB (28 Aug 2024); ESET (26 Mar 2025)");
-notes(s, 5);
+  x: M, y: 1.5, w: 5.6, h: 5.1, holeSize: 58, chartColors: [COL.primary, "A5A5A5"], showPercent: true,
+  showLegend: true, legendPos: "b", legendFontFace: FONT, legendFontSize: 16, dataLabelColor: "FFFFFF",
+  dataLabelFontSize: 18, dataLabelFontFace: FONT, showTitle: false });
+s.addText("Ransom paid straight\nto the affiliate", { x: 2.05, y: 3.35, w: 2.7, h: 0.9, align: "center", fontFace: FONT,
+  fontSize: 14, bold: true, color: COL.alert, isTextBox: true, margin: 0 });
+header(s, "Why affiliates came", 7.0, 1.7, 5.7);
+bullets(s, ["ALPHV had kept a $22M ransom from its own affiliate", "Rules: no CIS targets, no re-attacking payers",
+  "$5,000 deposit from June 2024"], 7.0, 2.3, 5.7, 3.8);
+cite(s, "Group-IB (28 Aug 2024); ESET (26 Mar 2025); TechCrunch (15 Apr 2024)");
 
-// 7. Victims
-s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Malware, victims, negotiation" });
-s.addText("Victims are chosen by exposure and leverage, not by sector", { placeholder: "title" });
-speakerTag(s, script.slides[6].speaker);
-const victims = [["Christie's", "Auction · May 2024"], ["Frontier", "Telecom · Apr 2024"], ["Change Healthcare", "Health · Apr 2024 (re-extortion)"],
-  ["Kawasaki Europe", "Manufacturing · Sep 2024"]];
-victims.forEach(([n, d], i) => card(s, 0.6 + (i % 2) * 3.15, 1.5 + Math.floor(i / 2) * 1.6, 3.0, 1.45, n, d, { headSize: 16, bodySize: 13 }));
-card(s, 7.0, 1.5, 5.7, 4.9, "Why these victims",
-  "11 critical-infrastructure sectors in 210 victims (FBI). Manufacturing and healthcare lead. Entry follows exposed RDP and "
-  + "edge CVEs (Citrix, FortiOS, Confluence). Rules allowing data-only extortion of hospitals point to regulatory leverage. "
-  + "Geography is the only firm exclusion: the CIS.", { fill: THEME.colors.dk1, headColor: C.accent2, bodyColor: C.background1, bodySize: 15 });
-card(s, 0.6, 4.75, 6.15, 1.65, "Most-hit countries", "United States, United Kingdom, Spain, France, Italy", { headSize: 16, bodySize: 14 });
-source(s, "Sources: CISA AA24-242A; Bitsight; Group-IB; The Register; BleepingComputer; The Record; TechCrunch");
-notes(s, 6);
+// 8. Results: victims
+s = base(7, "Victims were chosen by exposure, not by sector");
+table(s, [["Victim", "Sector", "Date", "Outcome"],
+  ["Change Healthcare", "Healthcare", "Apr 2024", "Re-extorted after paying ALPHV"],
+  ["Frontier", "Telecoms", "Apr 2024", "751,895 notified"],
+  ["Christie's", "Auction", "May 2024", "Refused; data \"sold\""],
+  ["Kawasaki Europe", "Manufacturing", "Sep 2024", "Refused; 487 GB published"]], M, 1.65, 7.4, [2.2, 1.7, 1.2, 2.3], 16);
+header(s, "Pattern", 8.5, 1.7, 4.2);
+bullets(s, ["Entry via exposed RDP and edge-device CVEs", "11 critical-infrastructure sectors among 210 victims",
+  "Only firm exclusion: CIS countries"], 8.5, 2.3, 4.2, 4.0);
+cite(s, "CISA AA24-242A; The Register; BleepingComputer; SC Media; TechCrunch (2024)");
 
-// 8. Negotiation
-s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Malware, victims, negotiation" });
-s.addText("Negotiation: high anchors, inflated claims, short clocks", { placeholder: "title" });
-speakerTag(s, script.slides[7].speaker);
+// 9. Results: negotiation
+s = base(8, "Victims who paid settled at about 39% of the opening demand");
 s.addChart(pres.charts.BAR, [{ name: "US$ thousands", labels: ["Median initial demand", "Median payment"], values: [900, 350] }], {
-  x: 0.6, y: 1.5, w: 5.6, h: 4.9, barDir: "col", chartColors: [THEME.colors.accent1, THEME.colors.accent3],
-  showValue: true, dataLabelPosition: "outEnd", dataLabelFontFace: "+mn-lt", dataLabelFontSize: 14, dataLabelColor: THEME.colors.dk1,
-  dataLabelFormatCode: "$#,##0\"k\"", catAxisLabelFontFace: "+mn-lt", catAxisLabelFontSize: 13, catAxisLabelColor: THEME.colors.dk1,
-  valAxisHidden: true, valGridLine: { style: "none" }, catGridLine: { style: "none" }, showLegend: false,
-  showTitle: true, title: "Arete 2024 RansomHub cases", titleFontFace: "+mn-lt", titleFontSize: 15, titleColor: THEME.colors.dk1,
-});
-card(s, 6.6, 1.5, 6.1, 1.55, "Claimed vs notified", "Christie's: \"500,000+\" vs 45,798 · Frontier: \"2 million+\" vs 751,895", { bodySize: 15 });
-card(s, 6.6, 3.2, 6.1, 1.55, "Clocks and outcomes", "Kawasaki: countdown to 14 Sep 2024, then 487 GB published · Frontier: 9 days", { bodySize: 15 });
-card(s, 6.6, 4.9, 6.1, 1.5, "Why so little chat data", "Per-victim onion chats run by affiliates: only 1 RansomHub chat among 295 public ones", { bodySize: 15 });
-source(s, "Sources: Arete (Jan 2025); The Register; BleepingComputer; SC Media; ransomware.live negotiation archive");
-notes(s, 7);
+  x: M, y: 1.5, w: 6.4, h: 5.1, barDir: "col", chartColors: [COL.primary, COL.accent], showValue: true,
+  dataLabelPosition: "outEnd", dataLabelFontFace: FONT, dataLabelFontSize: 18, dataLabelColor: COL.body,
+  dataLabelFormatCode: "$#,##0\"k\"", catAxisLabelFontFace: FONT, catAxisLabelFontSize: 16, catAxisLabelColor: COL.body,
+  valAxisHidden: true, valGridLine: { style: "none" }, catGridLine: { style: "none" }, showLegend: false, showTitle: false });
+s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 4.5, y: 1.7, w: 2.3, h: 0.6, rectRadius: 0.06, fill: { color: "FBE9E9" },
+  line: { color: COL.alert, width: 1 } });
+s.addText("≈ 39% of demand", { x: 4.5, y: 1.7, w: 2.3, h: 0.6, align: "center", valign: "middle", fontFace: FONT,
+  fontSize: 16, bold: true, color: COL.alert, isTextBox: true, margin: 0 });
+header(s, "Pressure tactics", 7.6, 1.7, 5.1);
+bullets(s, ["Inflated claims: Christie's \"500,000\" vs 45,798 notified", "Countdown clocks: Kawasaki, Frontier",
+  "Only 1 of 295 public chats is RansomHub's"], 7.6, 2.3, 5.1, 4.0);
+cite(s, "Arete (Jan 2025), 2024 incident-response cases; The Register; BleepingComputer; ransomware.live");
 
-// 9. Law enforcement
-pres.addSection({ title: "Law enforcement and recommendations" });
-s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Law enforcement and recommendations" });
-s.addText("Law enforcement fed RansomHub; the market ended it", { placeholder: "title" });
-speakerTag(s, script.slides[8].speaker, true);
-const events = [
-  ["Dec 2023", "FBI disrupts ALPHV"], ["Feb 2024", "Operation Cronos hits LockBit; RansomHub launches"],
-  ["Aug 2024", "Joint advisory AA24-242A"], ["Apr 2025", "RansomHub goes dark; DragonForce claims it"],
-  ["Sep 2025", "DOJ charges Scattered Spider member (RansomHub affiliate)"],
-];
-events.forEach(([d, t], i) => {
-  const y = 1.5 + i * 0.98;
-  s.addText(d, { x: 0.6, y, w: 1.6, h: 0.8, fontSize: 16, bold: true, color: C.accent1, isTextBox: true, margin: 0, valign: "middle" });
-  s.addText(t, { x: 2.3, y, w: 4.6, h: 0.8, fontSize: 15, color: C.text1, isTextBox: true, margin: 0, valign: "middle" });
-});
-card(s, 7.3, 1.5, 5.4, 4.9, "Our judgement (moderate confidence)",
-  "No action ever hit RansomHub's core. Takedowns of rivals supplied its affiliates; the advisory raised defenders' costs; "
-  + "affiliate charges came after it had folded. Its affiliates simply moved to DragonForce and Qilin.",
-  { fill: THEME.colors.dk1, headColor: C.accent2, bodyColor: C.background1, bodySize: 16 });
-source(s, "Sources: The Register (28 Dec 2024); CISA AA24-242A; The Hacker News (Apr 2025, Jul 2024); US DOJ (Sep 2025)");
-notes(s, 8);
+// 10. Discussion: law enforcement
+s = base(9, "No action reached RansomHub's core; its affiliates moved to other brands");
+table(s, [["Action", "Date", "Effect on RansomHub"],
+  ["ALPHV and LockBit takedowns", "Dec 2023 to Feb 2024", "Supplied its affiliates"],
+  ["Joint advisory AA24-242A", "Aug 2024", "Tradecraft unchanged"],
+  ["Charges against Scattered Spider (an affiliate)", "Sep 2025", "Came after the collapse"],
+  ["None claimed", "Apr 2025", "Went dark; DragonForce, Qilin absorb affiliates"]], M, 1.65, 8.0, [3.2, 2.0, 2.8], 16, 3);
+header(s, "Limitation", 9.0, 1.7, 3.7);
+bullets(s, ["Cause of April 2025 collapse unconfirmed", "A sealed investigation cannot be ruled out"], 9.0, 2.3, 3.7, 3.8);
+cite(s, "The Register (2024); CISA (2024); Microsoft via The Hacker News (2024); US DOJ (2025); The Hacker News (2025)");
 
-// 10. Recommendations
-s = pres.addSlide({ masterName: "CONTENT", sectionTitle: "Law enforcement and recommendations" });
-s.addText("What to do on Monday morning", { placeholder: "title" });
-speakerTag(s, script.slides[9].speaker);
-const recs = [
-  ["Detect", "Spray-then-success RDP logons · DCSync from non-DCs · Rclone / SFTP on 443 · unapproved RMM installs"],
-  ["Respond", "Assume theft before encryption · hunt random six-letter services · verify the attacker's data claims"],
-  ["Mitigate", "No internet-facing RDP · patch CISA's edge CVEs · driver blocklist on · tiered admin"],
-  ["Be resilient", "Immutable offline backups with separate credentials · payment policy decided in advance · track affiliates, not brands"],
+// 11. Recommendations
+s = base(10, "Defenders get four chances to stop the attack before encryption");
+table(s, [["Area", "First action", "Traces to"],
+  ["Detect", "Alert on spray-then-success RDP, DCSync, Rclone/SFTP on 443", "Slide 5"],
+  ["Respond", "Assume theft first; verify the attacker's data claims", "Slides 6, 9"],
+  ["Mitigate", "No internet-facing RDP; patch edge CVEs; tiered admin", "Slides 5, 8"],
+  ["Be resilient", "Offline backups; payment policy decided in advance", "Slides 6, 9"]], M, 1.65, W, [2.0, 8.0, 2.13], 18);
+cite(s, "Each action traces to a finding in the report (Sections 2, 3, 6 and 8)");
+
+// 12. Conclusions (dark, stays up during Q&A)
+s = pres.addSlide();
+s.background = { color: COL.primary };
+s.addText("Conclusions", { x: M, y: 0.4, w: W, h: 0.5, fontFace: FONT, fontSize: 22, color: "CFE0F1", isTextBox: true, margin: 0 });
+s.addText([
+  { text: "1. RansomHub was a brand around a mobile affiliate workforce: ", options: { bold: true, breakLine: false } },
+  { text: "takedowns of rivals built it; market pressure ended it.", options: { breakLine: true } },
+  { text: " ", options: { breakLine: true, fontSize: 10 } },
+  { text: "2. The defender's window is the six days before encryption, ", options: { bold: true, breakLine: false } },
+  { text: "where every stage left a detectable trace.", options: { breakLine: true } },
+  { text: " ", options: { breakLine: true, fontSize: 10 } },
+  { text: "3. Track affiliates and tradecraft, ", options: { bold: true, breakLine: false } },
+  { text: "because the same playbook now runs under DragonForce and Qilin.", options: {} },
+], { x: M, y: 1.3, w: W, h: 4.3, fontFace: FONT, fontSize: 22, color: "FFFFFF", valign: "top", isTextBox: true, margin: 0 });
+s.addText("Questions and feedback welcome · [group contact email]", { x: M, y: 6.3, w: W, h: 0.5, fontFace: FONT,
+  fontSize: 16, color: "CFE0F1", isTextBox: true, margin: 0 });
+s.addNotes(script.slides[11].speaker + ": " + script.slides[11].text);
+
+// 13. References
+s = base(12, "References", { noSpeaker: true });
+const refs = [
+  "Arete (2025). Malware Spotlight: RansomHub Ransomware.",
+  "CISA, FBI, MS-ISAC & HHS (2024). #StopRansomware: RansomHub Ransomware, AA24-242A.",
+  "ESET Research (2025). Shifting the sands of RansomHub's EDRKillShifter. WeLiveSecurity.",
+  "Group-IB (2024). RansomHub ransomware-as-a-service.",
+  "Ransomware.live (2024). Negotiation archive: RansomHub chat.",
+  "The DFIR Report (2025). Hide Your RDP: Password Spray Leads to RansomHub Deployment.",
+  "The Hacker News (2024). Scattered Spider adopts RansomHub and Qilin (reporting Microsoft Threat Intelligence).",
+  "The Hacker News (2025). RansomHub went dark April 1; affiliates fled to Qilin, DragonForce claimed control.",
+  "The Register (2024). Christie's data sold (4 Jun); How takedowns of LockBit and ALPHV led to RansomHub's rise (28 Dec).",
+  "BleepingComputer (2024). Frontier warns 750,000 of a data breach after extorted by RansomHub.",
+  "SC Media (2024). RansomHub releases 487GB of Kawasaki Motors Europe data. TechCrunch (2024). Change Healthcare / RansomHub.",
+  "U.S. Department of Justice (2025). United Kingdom national charged in connection with multiple cyber attacks.",
 ];
-recs.forEach(([h, b], i) => card(s, 0.6 + (i % 2) * 6.15, 1.5 + Math.floor(i / 2) * 2.5, 5.95, 2.3, h, b, { bodySize: 15 }));
-source(s, "Each recommendation traces to a finding in the report (Sections 2, 3, 6 and 8).");
-notes(s, 9);
+s.addText(refs.map((r, i) => ({ text: r, options: { breakLine: i < refs.length - 1 } })), { x: M, y: 1.2, w: W, h: 5.6,
+  fontFace: FONT, fontSize: 13, color: COL.body, paraSpaceAfter: 6, valign: "top", isTextBox: true, margin: 0 });
+
+// 14. Appendix A: IOCs
+s = base(13, "Appendix A: six indicators from the modelled case support retrospective hunting", { noSpeaker: true });
+table(s, [["Indicator", "Context"], ["185.190.24[.]54 / .33", "RDP password-spray sources"], ["164.138.90[.]2", "Interactive RDP logon"],
+  ["38.180.245[.]207:443", "Rclone SFTP exfiltration"], ["SHA-256 25117dcb…97328cb", "amd64.exe (encryptor)"],
+  ["How To Restore Your Files.txt", "Ransom note name"], ["brahma2023[@]onionmail[.]org", "Email linked to RansomHub"]],
+  M, 1.65, W, [5.0, 7.13], 16);
+cite(s, "The DFIR Report (2025); CISA AA24-242A (2024). Full list in report Appendix A.");
+
+// 15. Appendix B: anticipated question
+s = base(14, "Appendix B: the April 2025 collapse is best explained by the market, on current evidence", { noSpeaker: true });
+bullets(s, [[{ text: "For a market explanation: ", bold: true }, { text: "DragonForce's public claim; affiliate moves to Qilin; new brands such as VanHelsing" }],
+  [{ text: "Against: ", bold: true }, { text: "no agency comment either way; sealed cases are invisible" }],
+  [{ text: "Confidence: ", bold: true }, { text: "moderate" }]], M, 1.7, W, 4.5);
+cite(s, "The Hacker News (30 Apr 2025); Rapid7 Q2 2025 ransomware trends");
 
 (async () => {
   const out = path.join(__dirname, "A4_RansomHub_Presentation.pptx");
   await pres.writeFile({ fileName: out });
-  if (SKILL) {
-    const { applyTheme } = require(path.join(SKILL, "scripts", "apply_theme.js"));
+  if (process.env.PPTX_SKILL_DIR) {
+    const { applyTheme } = require(path.join(process.env.PPTX_SKILL_DIR, "scripts", "apply_theme.js"));
     await applyTheme(out, THEME);
   }
-  console.log("wrote", out);
+  console.log("wrote", out, pres.slides.length, "slides");
 })();
