@@ -164,7 +164,7 @@ bullets(s, ["ALPHV had kept a $22M ransom from its own affiliate", "Rules: no CI
 cite(s, "Group-IB (28 Aug 2024); ESET (26 Mar 2025); TechCrunch (15 Apr 2024)");
 
 // 8. Results: victims
-s = base(7, "Victims were chosen by exposure, not by sector");
+s = base(7, "Exposure, more than sector, decided who became a victim");
 table(s, [["Victim", "Sector", "Date", "Outcome"],
   ["Change Healthcare", "Healthcare", "Apr 2024", "Re-extorted after paying ALPHV"],
   ["Frontier", "Telecoms", "Apr 2024", "751,895 notified"],

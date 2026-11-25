@@ -26,251 +26,215 @@ def T(header, rows, widths=None, caption=None, size=19, first_bold=True):
 
 TITLE = "RansomHub: Ransomware Campaign Intelligence Investigation"
 
+from tables import S1_1, S1_2, S2_1  # noqa: E402
+
 FRONT = [
     {"t": "p", "text": "CIS*6530 Cyber Threat Intelligence and Adversarial Risk Analysis · Assignment 4", "size": 20},
     H(1, TITLE),
     P("**Group members (name, student number):** [Member 1] · [Member 2] · [Member 3]", count=False),
     P("**Word count: {WC}** (report body; excludes tables, the IOC and ATT&CK appendix tables, references, "
       "the contribution statement and the AI-use note)", count=False),
-    {"t": "note", "text": "**Bottom line.** RansomHub was the most prolific ransomware-as-a-service (RaaS) brand of 2024. "
-     "It was built on purchased Knight code and on affiliates displaced by the LockBit and ALPHV takedowns, and it disappeared "
-     "on 1 April 2025 without any law-enforcement action against its core. Its intrusions were affiliate-run and hands-on-keyboard. "
-     "The representative case in this report went from an exposed RDP server to domain-wide encryption in about 118 hours, and the "
-     "defensive opportunities sit inside that window, before any file is encrypted.", "count": C},
+    {"t": "note", "text": "**Bottom line.** RansomHub was the busiest ransomware-as-a-service (RaaS) brand of 2024. It ran on "
+     "code bought from the Knight gang and on affiliates left stranded when police disrupted LockBit and ALPHV, and on "
+     "1 April 2025 it vanished without any law-enforcement action against its operators. The intrusion we model took "
+     "about 118 hours to get from an exposed RDP server to encryption across the domain, and those hours are where "
+     "defenders have their chances.", "count": C},
 ]
 
 S1 = [
     H(2, "1. Adversary profile: Diamond Model of one incident"),
-    P("This model covers one intrusion, which The DFIR Report documented in detail [2]. "
-      "It began in November 2024 with a password-spray attack on an internet-facing Remote Desktop Protocol (RDP) "
-      "server and ended six days later with RansomHub encryption across the domain. We chose it as the most completely evidenced public "
-      "RansomHub intrusion: telemetry for every stage, hashed tooling and a measured exfiltration volume. The victim is "
-      "anonymised, which limits only that vertex."),
-    T(["Feature", "Evidence for this incident", "Confidence / gaps"], [
-        ["Adversary", "A RansomHub affiliate. The binary, the note and the operator tooling tie the attack to the brand [2]. "
-         "The hands-on operator used a Splashtop display name \"johnattan\" from a client host \"WINVM\", and the clipboard "
-         "showed 10.0.2.15, the VirtualBox NAT default. The operator was working from a virtual machine [2].",
-         "Affiliate identity unknown. Brand attribution is high confidence, individual attribution none."],
-        ["Capability", "Password spraying; Mimikatz (DCSync per child domain, LSASS); NirSoft CredentialsFileView; Advanced IP "
-         "Scanner and SoftPerfect NetScan; Atera and Splashtop remote-management (RMM) tools; Rclone over SFTP; the RansomHub "
-         "encryptor amd64.exe run with -pass and -only-local, spread over SMB via random six-letter services; vssadmin, "
-         "wevtutil and Hyper-V Stop-VM before encryption [2].",
-         "High. Tools were recovered and hashed."],
-        ["Infrastructure", "Spray sources 185.190.24.54 and 185.190.24.33; interactive logon from 164.138.90.2; exfiltration to "
-         "38.180.245.207 on TCP 443 (SFTP, not HTTPS) [2]. Legitimate Atera and Splashtop SaaS relays were used for "
-         "C2-like access. Victim communication runs through RansomHub's Tor negotiation and leak infrastructure [1].",
-         "High for the IPs (from logs); the hosting providers' role is unknown."],
-        ["Victim", "A multi-domain Active Directory organisation with internet-exposed RDP, Hyper-V hosts, file servers and "
-         "Veeam backup servers (the exfiltration script was staged in C:\\ProgramData\\Veeam\\) [2].",
-         "Name, sector, size and country withheld by the source."],
-    ], widths=[0.16, 0.56, 0.28], caption="Table 1. Core features (sources in brackets)."),
-    T(["Meta-feature", "This incident"], [
-        ["Timestamp", "November 2024; time to ransomware about 118 hours over six calendar days [2]."],
-        ["Phase", "Every phase from initial access to impact is evidenced (see Section 2)."],
-        ["Result", "About 2.03 GB exfiltrated in about 40 minutes on day 3; domain-wide encryption, shadow copies deleted, "
-         "logs cleared on day 6 [2]. Ransom amount and payment outcome are not reported."],
-        ["Direction", "Adversary → infrastructure → victim for access; victim → infrastructure (38.180.245.207) for "
-         "exfiltration."],
-        ["Methodology", "Human-operated double extortion: living off the land plus commercial RMM, credential theft, "
-         "exfiltration before encryption."],
-        ["Resources", "RaaS access (builds, panel, leak site supplied by the operator [3]); free or commercial tools; "
-         "rented VPS addresses; an operator VM."],
-    ], widths=[0.2, 0.8], caption="Table 2. Meta-features (all six recorded)."),
-    P("Two gaps remain. We do not know who the affiliate was, and under RaaS the affiliate chose the victim. We also cannot see "
-      "the negotiation, so the Result feature stops at encryption."),
+    P("Our Diamond Model covers a single intrusion, documented by The DFIR Report from the victim's own telemetry [2]. "
+      "In November 2024 an affiliate sprayed passwords at an internet-facing Remote Desktop Protocol (RDP) server and, "
+      "six days later, ran the RansomHub encryptor across the domain. We picked this case because no other public "
+      "RansomHub intrusion is as complete: every stage appears in the logs, the tools were recovered and hashed, and the "
+      "volume of stolen data was measured."),
+    S1_1,
+    S1_2,
+    P("Two things are missing from the diamond. We do not know who the affiliate was, and under RaaS it was the "
+      "affiliate, not the brand, that picked this victim. Nor can we see the ransom negotiation, so the Result feature "
+      "ends at encryption."),
 ]
 
 S2 = [
     H(2, "2. Attack lifecycle (Lockheed Martin Cyber Kill Chain)"),
-    T(["Stage", "Evidence in this incident", "Status"], [
-        ["Reconnaissance", "The affiliate found an internet-facing RDP server. How it was found (scanning or a purchased "
-         "list) is not reported.", "Inferred, not evidenced"],
-        ["Weaponisation", "No exploit was built. The operator supplied the encryptor, and per-victim builds need a "
-         "64-character password [4].", "Not applicable / not evidenced"],
-        ["Delivery", "Password spray against the RDP server from two IPs over about four hours; six accounts "
-         "authenticated (Event ID 4624) [2].", "Evidenced"],
-        ["Exploitation", "No vulnerability was exploited. The intruder logged on with a valid account from 164.138.90.2 "
-         "with an elevated token [2].", "Evidenced (valid accounts)"],
-        ["Installation", "Day 2: Atera installed on two backup servers; Splashtop used from day 5; new services "
-         "(Event ID 7045); passwords reset for several users before impact [2].", "Evidenced"],
-        ["Command and control", "Direct RDP throughout, plus Atera and Splashtop to blend in with administration "
-         "traffic [2].", "Evidenced"],
-        ["Actions on objectives", "Day 1: net/nltest discovery, RDP to two domain controllers, Mimikatz DCSync. "
-         "Days 1 and 2: IP Scanner and NetScan sweeps. Day 3: Rclone exfiltration of 2.03 GB. Day 6: amd64.exe, SMB "
-         "propagation, VM shutdown, shadow-copy deletion, log clearing, encryption [2].", "Evidenced; ransom note image "
-         "only, negotiation not reported"],
-    ], widths=[0.18, 0.6, 0.22], caption="Table 3. Kill-chain mapping of the same incident."),
-    P("Five of seven stages are evidenced from the victim's own logs, across five days of returning sessions, repeated "
-      "scans and two RMM installs, each a detection opportunity before impact. The unevidenced stages happen outside "
-      "the victim: target selection and the demand."),
+    S2_1,
+    P("Five of the seven stages can be read straight from the victim's logs. The intruder came back on several days, "
+      "reran scanners and installed two different remote-management tools, and each of those visits gave defenders a "
+      "chance to act before impact. The two stages we cannot evidence happen away from the victim's network: choosing "
+      "the target and making the demand."),
 ]
 
 S3 = [
     H(2, "3. Malware behaviour, TTPs and indicators"),
-    P("RansomHub's encryptor reuses code from Knight, whose source code was offered for sale in "
-      "February 2024 [4]. CISA describes RansomHub as formerly known as Cyclops and Knight [1]. Group-IB describes the locker as "
-      "written in Go with builds for Windows, Linux and ESXi [3]. Arete reports C++ and Go components [5]. The sources agree on platforms but not language."),
-    P("For encryption, each victim gets its own Curve25519 key pair [1]. Group-IB says file encryption uses AES-256, "
-      "ChaCha20 or XChaCha20, depending on hardware support [3]. Files under 0x100000 bytes are fully encrypted. Larger "
-      "files are encrypted in 0x100000-byte chunks with 0x200000 bytes skipped between chunks. This intermittent mode trades "
-      "completeness for speed. A 58-byte footer ending in 0x00ABCDEF is appended to every file [1]. The extension is "
-      "random, and Arete links it to the first six characters of the public key [5]. The note is usually named "
-      "\"How To Restore Your Files.txt\". It contains no amount, only a client ID, a per-victim .onion chat link and a "
-      "deadline of 3 to 90 days set by the affiliate [1]."),
-    P("The binary will not run without a -pass value. In our incident it was "
-      "launched as amd64.exe -pass [redacted] and spread itself over SMB, with -only-local preventing re-propagation loops "
-      "[2]. Before encrypting, it stopped Hyper-V virtual machines, deleted shadow copies (vssadmin and "
-      "Win32_ShadowCopy), set permissive symlink evaluation and cleared the Security, System and Application logs [2]. "
-      "CISA lists about 30 processes (SQL, Oracle, Outlook and others) it kills first [1]."),
-    P("The encryptor has no exfiltration function, so theft is left to the affiliate [1]. In this "
-      "case it was Rclone, launched by a hidden VBScript (nocmd.vbs) through a batch file (rcl.bat). An include-list of document, mail and "
-      "image extensions (*.pst, *.msg, *.edb, *.pdf, *.xlsx and others) limited the haul to 2.03 GB of high-leverage "
-      "files [2]."),
-    P("For defence evasion, RansomHub's operators built and maintained their own EDR killer, EDRKillShifter, and offered "
-      "it to affiliates through the panel from May 2024 [4]. It loads a vulnerable driver to terminate security "
-      "products. CISA maps this behaviour to T1562.001 [1]. The full technique mapping and the cited indicators are in "
-      "Appendix A (Tables A1 and A2)."),
+    P("RansomHub's encryptor reuses code from Knight, a rival whose source code went up for sale in February 2024 [4], "
+      "and CISA lists Cyclops and Knight as its earlier names [1]. Group-IB describes a locker written in Go, with builds "
+      "for Windows, Linux and ESXi [3], while Arete also reports C++ components [5]. The vendors agree on the platforms "
+      "but not on the language."),
+    P("Each victim gets its own Curve25519 key pair [1], and Group-IB reports that files are encrypted with AES-256, "
+      "ChaCha20 or XChaCha20, depending on what the hardware supports [3]. Files under 0x100000 bytes are encrypted whole. "
+      "Larger ones are processed in 0x100000-byte chunks with 0x200000 bytes skipped in between, which is "
+      "much faster. Every file gets a 58-byte footer ending in 0x00ABCDEF [1]. "
+      "The extension is random; Arete ties it to the first six characters of the public key [5]. The ransom note, usually "
+      "\"How To Restore Your Files.txt\", names no price. It gives a client ID, a link to a private .onion chat and a "
+      "deadline of 3 to 90 days chosen by the affiliate [1]."),
+    P("The binary refuses to run without a -pass value. In our case the affiliate launched it as amd64.exe -pass "
+      "[redacted], and it copied itself to other hosts over SMB, with the -only-local flag stopping those copies from "
+      "spreading again [2]. Before encrypting it shut down Hyper-V virtual machines, deleted shadow copies through vssadmin "
+      "and Win32_ShadowCopy, loosened symlink evaluation and wiped the Security, System and Application logs [2]. CISA "
+      "lists about 30 processes, among them SQL, Oracle and Outlook, that it kills first [1]."),
+    P("Data theft is left to the affiliate, because the encryptor has no exfiltration code [1]. Here the affiliate used "
+      "Rclone, started by a hidden VBScript (nocmd.vbs) through a batch file (rcl.bat). An include-list of document, mail "
+      "and image extensions (*.pst, *.msg, *.edb, *.pdf, *.xlsx and others) kept the haul to 2.03 GB of the files most "
+      "useful for extortion [2]."),
+    P("The operators also wrote their own EDR killer, EDRKillShifter, and from May 2024 offered it to affiliates through "
+      "the panel [4]. It loads a vulnerable driver and uses it to terminate security products, behaviour CISA maps to "
+      "T1562.001 [1]. See Appendix A (Tables A1 and A2) for the full mapping and indicators."),
 ]
 
 S4 = [
     H(2, "4. Infrastructure and RaaS structure"),
-    P("RansomHub separated development from deployment. The operators supplied the locker builds, EDRKillShifter, an "
-      "affiliate panel for managing targets and chat rooms, and a Tor leak site. Each panel had its own onion domain [3]. "
-      "Affiliates bought access and did the intrusions. The offer that drove recruitment was economic: affiliates kept "
-      "90% of each payment and received ransoms into their own wallets, paying the operators their 10% afterwards [3][4]. "
-      "For affiliates who had just watched ALPHV keep a $22 million payment from its own partner, control of the wallet "
-      "addressed the main risk of working with a RaaS brand [9][14]. From 21 June 2024 the operators required a US$5,000 "
-      "deposit from new affiliates [4]."),
-    P("The rules show what the operators wanted to protect. Attacks on the Commonwealth of Independent States (CIS), Cuba, "
-      "North Korea and China were banned. Paid victims could not be re-attacked. Non-profit hospitals could not be "
-      "encrypted, although their data could still be ransomed [3]. Affiliates who broke a post-payment promise were banned "
-      "[3]. The rules protect the brand's reputation, since its income depends on victims believing that paying works."),
-    P("Infrastructure reuse is low at the network layer and high at the tool layer. CISA's IP list is mostly historical "
-      "and largely QakBot-linked [1]. The addresses in our incident appear in no other public RansomHub case we found. "
-      "Reuse instead shows in commodity tools that recur across intrusions: Mimikatz, Rclone, AnyDesk and other RMM tools, "
-      "and network scanners [1][2]. ESET also tracked one affiliate, \"QuadSwitcher\", working for RansomHub, Play, Medusa "
-      "and BianLian, and assessed with high confidence that the same actor carried out those attacks [4]. The infrastructure that matters belongs to affiliates like this one, and it moves with them between brands."),
+    P("RansomHub kept development and deployment apart. The operators supplied the locker builds, EDRKillShifter, a "
+      "panel for managing targets and chat rooms, and a Tor leak site, with a separate onion domain for each panel [3]. "
+      "Affiliates paid for access and carried out the intrusions. What drew them in was the money: they kept 90% of each "
+      "payment, received it into their own wallets and passed the operators' 10% on afterwards [3][4]. ALPHV had just "
+      "kept a $22 million payment that belonged to one of its own affiliates, so holding the wallet removed the biggest "
+      "risk of signing up with a RaaS brand [9][14]. From 21 June 2024 new affiliates also had to put down a US$5,000 "
+      "deposit [4]."),
+    P("The house rules banned attacks on the Commonwealth of Independent States (CIS), Cuba, North Korea and China, and on "
+      "any victim who had already paid. Non-profit hospitals could not be encrypted, although their data could still be "
+      "held to ransom [3]. An affiliate who broke a promise made after payment was banned [3]. The rules protect "
+      "the brand's reputation, on which its income depends."),
+    P("Network infrastructure is rarely reused, while tools are reused constantly. CISA's list of IP addresses is mostly "
+      "historical and largely linked to QakBot [1], and the addresses in our case appear in no other public RansomHub "
+      "report we found. What recurs from one intrusion to the next is commodity tooling: Mimikatz, Rclone, AnyDesk and "
+      "other RMM products, and network scanners [1][2]. ESET followed one affiliate, which it calls \"QuadSwitcher\", "
+      "working for RansomHub, Play, Medusa and BianLian, and assessed with high confidence that the same actor carried "
+      "out all of those attacks [4]. The infrastructure that matters belongs to affiliates like this one, and it moves "
+      "with them from brand to brand."),
 ]
 
 S5 = [
     H(2, "5. Victim and industry-targeting analysis"),
-    P("By August 2024 the FBI counted at least 210 RansomHub victims across 11 critical-infrastructure sectors, including "
-      "water, healthcare, government services, financial services, critical manufacturing, transportation and "
-      "communications [1]. Bitsight ranks manufacturing first, followed by healthcare and professional services [16]. "
-      "Group-IB names the United States, United Kingdom, Spain, France and Italy as the most-hit countries [3]. Public "
-      "cases follow the same pattern. They include Christie's (auction, UK/US, May 2024) [11], Frontier Communications "
-      "(telecoms, US, April 2024) [12], Kawasaki Motors Europe (manufacturing, September 2024) [13], the second extortion "
-      "of Change Healthcare (healthcare, April 2024) [14], and Halliburton (energy services, August 2024). Halliburton's "
-      "attribution to RansomHub is reported but has not been confirmed by the company [15]."),
-    P("Three features of RansomHub explain this breadth better than any sector preference. First, the "
-      "initial-access methods are opportunistic: exposed RDP in our case, and CISA's list of edge-device CVEs (Citrix, "
-      "FortiOS, Confluence, BIG-IP, ActiveMQ) [1]. Victims are those whose perimeter is exposed, whatever their industry. "
-      "Second, affiliates choose targets, so the victim mix reflects many independent operators. Third, the rules point "
-      "towards leverage. Allowing data-only extortion of hospitals, and re-extorting Change Healthcare, show the brand "
-      "leaning into sectors where a leak brings regulatory and patient-safety consequences [3][14]. Manufacturing probably leads because downtime there is expensive. Our "
-      "assessment, with moderate confidence, is that exposure and leverage drove RansomHub's victimology and sector "
-      "choice played little part. Geography is the clear exception: the CIS ban is consistent with a Russian-speaking operator "
-      "base."),
+    P("By August 2024 the FBI had counted at least 210 RansomHub victims in 11 critical-infrastructure sectors, including "
+      "healthcare, water and critical manufacturing [1]. Bitsight puts manufacturing first, ahead of healthcare and professional services [16], and "
+      "Group-IB lists the United States, United Kingdom, Spain, France and Italy as the countries hit hardest [3]. The "
+      "public cases fit that spread: Christie's (auctions, May 2024) [11], Frontier Communications (telecoms, April 2024) "
+      "[12], Kawasaki Motors Europe (manufacturing, September 2024) [13], the second extortion of Change Healthcare "
+      "(healthcare, April 2024) [14] and Halliburton (energy services, August 2024), although Halliburton has never "
+      "confirmed that RansomHub was responsible [15]."),
+    P("Three features of how RansomHub worked explain this breadth better than any preference for a sector. Access was "
+      "opportunistic: exposed RDP in our case, and in CISA's reporting a list of edge-device CVEs in Citrix, FortiOS, "
+      "Confluence, BIG-IP and ActiveMQ [1]. Any organisation with an exposed perimeter could become a victim. Targets were "
+      "also chosen by many independent affiliates, which spreads the victim list further. Where the rules do show a "
+      "preference, it is for leverage, since permitting data-only extortion of hospitals and re-extorting Change "
+      "Healthcare both point to sectors in which a leak brings regulators and patient-safety concerns [3][14]. "
+      "Manufacturing probably leads because downtime there is so costly. We assess with moderate confidence that exposure "
+      "and leverage drove RansomHub's victimology and that sector choice played little part. Geography is the one firm "
+      "exclusion, and the CIS ban fits a Russian-speaking operator base."),
 ]
 
 S6 = [
     H(2, "6. Ransom negotiation analysis"),
-    P("Little public negotiation data exists for RansomHub, for reasons that follow from how it negotiated. The largest public "
-      "archive of ransomware chats holds 295 conversations across 31 groups but only one RansomHub chat [10]. That chat is a "
-      "single templated message (encrypted servers and backups, stolen accounting, HR and client data, threats to "
-      "notify clients and publish), with no amount, deadline or victim reply [10]. RansomHub's design explains the gap. "
-      "Every note points to a per-victim onion chat [1]. Each affiliate panel had its own onion domain [3]. Affiliates, not "
-      "the operators, ran the conversation and received the payment [3]. The shared, guessable negotiation portals that "
-      "researchers scraped for other groups did not exist, and its internal chats have never leaked the way LockBit's and Black Basta's did."),
-    P("Aggregate incident-response data fills part of the gap. Across Arete's 2024 RansomHub engagements, the median "
-      "initial demand was US$900,000 and the median payment US$350,000 [5]. Victims who paid typically settled at "
-      "about 39% of the opening figure, which fits negotiation from a deliberately high anchor."),
-    P("The public cases show the pressure tactics, and they are biased towards victims who refused to pay, because those "
-      "are the cases that become visible:"),
-    B("RansomHub used countdown deadlines. Kawasaki Motors Europe was given a timer expiring on 14 September 2024. RansomHub then "
-      "published 487 GB, which it claimed was the stolen data [13]. Frontier was given nine days [12]."),
-    B("It inflated its claims. RansomHub said it had data on at least 500,000 Christie's clients; Christie's notified "
-      "45,798 [11]. It claimed more than 2 million Frontier customers; Frontier notified 751,895 [12]. Overstating the haul raises the apparent cost of refusing."),
-    B("When Christie's stopped talking, RansomHub announced the data had been sold. Analysts "
-      "quoted by The Register suspected this was face-saving rather than a real sale [11]."),
-    B("It also re-extorted another gang's victim. RansomHub listed Change Healthcare, which had reportedly already paid ALPHV about US$22 million. "
-      "It threatened to sell 4 TB unless paid again [14]. The brand's no-re-attack rule evidently covered only its own victims."),
-    B("To make paying look safe, the note offers free decryption of files under 1 MB as proof [4]. Affiliates who failed to "
-      "honour a paid deal were banned [3]."),
-    P("We found no public source confirming a RansomHub payment in a named case. Halliburton disclosed US$35 million in "
-      "costs but did not say whether any of it was a ransom [15]. RansomHub's paid outcomes "
-      "are visible only in aggregate (the Arete medians), while non-payment outcomes are visible case by case."),
+    P("Little public negotiation data exists for RansomHub, and the reason lies in how it negotiated. The largest public "
+      "archive of ransomware chats holds 295 conversations from 31 groups, only one of them RansomHub's [10]. That one is "
+      "a single templated message with no amount, no deadline and no reply from the victim [10]. Every note pointed to a "
+      "private onion chat [1], each affiliate panel had its own onion domain [3], and the affiliate rather than the "
+      "operators ran the conversation and took the payment [3]. RansomHub therefore never had the shared negotiation "
+      "portals that researchers have scraped for other groups, and its internal chats have not leaked the way LockBit's "
+      "and Black Basta's did."),
+    P("Incident-response data fills part of the gap. In Arete's 2024 RansomHub cases the median opening demand was "
+      "US$900,000 and the median payment US$350,000 [5]. Victims who paid usually settled at about 39% of the first "
+      "figure, which suggests the demands were anchored deliberately high."),
+    P("The public cases show how pressure was applied, though they lean towards victims who refused to pay, since those "
+      "are the ones that become public:"),
+    B("Countdown deadlines. Kawasaki Motors Europe was given a timer that ran out on 14 September 2024, after which "
+      "RansomHub published 487 GB that it said was the stolen data [13]. Frontier was given nine days [12]."),
+    B("Inflated claims. RansomHub said it held data on at least 500,000 Christie's clients, and Christie's notified "
+      "45,798 [11]. It claimed more than 2 million Frontier customers, and Frontier notified 751,895 [12]. Overstating the "
+      "haul makes refusal look more expensive."),
+    B("A claimed sale. When Christie's stopped responding, RansomHub announced that the data had been sold, which analysts "
+      "quoted by The Register suspected was face-saving rather than a real sale [11]."),
+    B("Re-extortion. RansomHub listed Change Healthcare, which had reportedly already paid ALPHV about US$22 million, and "
+      "threatened to sell 4 TB unless it paid again [14]. Its rule against re-attacking paying victims evidently covered "
+      "only its own."),
+    B("Reassurance. The note offers to decrypt files under 1 MB free as proof [4], and affiliates who did not honour a "
+      "paid deal were banned [3]."),
+    P("We found no public source that confirms a RansomHub payment by a named victim. Halliburton disclosed US$35 million "
+      "in costs without saying whether any of it went on a ransom [15]. Paid outcomes are therefore visible only in "
+      "aggregate, through the Arete medians, while refusals can be followed case by case."),
 ]
 
 S7 = [
     H(2, "7. Law-enforcement and disruption actions"),
-    P("No arrest, indictment, sanction or seizure has been announced against RansomHub's core operators; our searches "
-      "of DOJ and vendor reporting through November 2026 found none. The actions that affected it were indirect."),
-    P("**Action 1: the ALPHV disruption (December 2023) and Operation Cronos against LockBit (February 2024).** These were "
-      "aimed at other groups, yet they shaped RansomHub more than any later action. It launched on RAMP on 2 February "
-      "2024 [4], between the two operations. It recruited displaced ALPHV and LockBit affiliates by offering wallet "
-      "control [9][18]. *Before:* RansomHub did not exist. *After:* it had at least 210 victims within six months [1], "
-      "and The Register attributes that rise to the two takedowns [9]. The effect was displacement: "
-      "the affiliates survived and changed brands."),
+    P("We found no arrest, indictment, sanction or seizure aimed at RansomHub's core operators in DOJ or vendor reporting "
+      "up to November 2026. Every action that affected it was indirect."),
+    P("**Action 1: the ALPHV disruption (December 2023) and Operation Cronos against LockBit (February 2024).** Both "
+      "operations targeted other groups, yet they shaped RansomHub more than anything that came later. It launched on "
+      "the RAMP forum on 2 February 2024 [4], between the two, and recruited the displaced ALPHV and LockBit affiliates by "
+      "letting them hold their own wallets [9][18]. *Before:* RansomHub did not exist. *After:* within six months it had "
+      "at least 210 victims [1], a rise The Register attributes to the two takedowns [9]."),
     P("**Action 2: the #StopRansomware joint advisory AA24-242A (29 August 2024).** The FBI, CISA, MS-ISAC and HHS "
-      "published RansomHub's TTPs, CVEs, file paths, IPs and an email address [1]. *Before:* defenders relied on vendor "
-      "reporting. *After:* the indicators became deployable, but tradecraft did not change. Our November 2024 case followed "
-      "the advisory's TTPs closely [2][4]. An advisory raises defenders' costs; it does not touch the operators."),
+      "published RansomHub's techniques, the CVEs it exploited, file paths, IP addresses and an email address [1]. "
+      "*Before:* defenders depended on vendor reporting. *After:* the indicators could be deployed widely, yet the "
+      "tradecraft stayed the same, and our November 2024 case followed the advisory's description closely [2][4]. An "
+      "advisory makes defence cheaper but does nothing to the operators."),
     P("**Action 3: charges against Scattered Spider (Octo Tempest), a documented RansomHub affiliate.** Microsoft reported "
-      "that Octo Tempest added RansomHub to its payloads in Q2 2024 [7]. In September 2025 the US Department of Justice "
-      "unsealed a complaint against Thalha Jubair, a UK national, for at least 120 intrusions tied to the group, with more "
-      "than US$115 million in ransom payments, alongside UK charges [8]. *Before:* the affiliate was deploying RansomHub in "
-      "2024. *After:* RansomHub had already gone dark, so the charges removed affiliate capacity from the ecosystem rather "
-      "than from RansomHub."),
-    P("**The 1 April 2025 collapse.** RansomHub's leak site was defaced with \"R.I.P. 3/3/25\" in March, and its "
-      "infrastructure went offline on 1 April 2025 [6][17]. No agency claimed it. DragonForce announced that RansomHub "
-      "had \"moved\" to its new cartel infrastructure. Researchers reported affiliates migrating to Qilin and new brands "
-      "such as VanHelsing forming from ex-RansomHub affiliates [6]. This was a business failure followed by fragmentation."),
-    P("**Judgement.** RansomHub gained more from law enforcement than it lost. Its rise came from takedowns "
-      "of competitors, and its fall came from internal and competitive pressure. Its affiliates simply moved to other "
-      "brands. The evidence favours treating RaaS brands as disposable wrappers around a persistent affiliate workforce. "
-      "We hold this with moderate confidence. The alternative is that a sealed investigation caused the April 2025 "
-      "collapse. We cannot exclude that, but no source supports it, and DragonForce's public claim points to a market "
+      "that Octo Tempest added RansomHub to its payloads in the second quarter of 2024 [7]. In September 2025 the US "
+      "Department of Justice unsealed a complaint against Thalha Jubair, a UK national, covering at least 120 intrusions "
+      "linked to the group and more than US$115 million in ransom payments, alongside charges in the UK [8]. *Before:* "
+      "the affiliate was deploying RansomHub in 2024. *After:* RansomHub had already gone dark, so the charges took "
+      "affiliate capacity out of the wider ecosystem, not out of RansomHub."),
+    P("**The 1 April 2025 collapse.** In March RansomHub's leak site was defaced with \"R.I.P. 3/3/25\", and on 1 April "
+      "2025 its infrastructure went offline [6][17]. No agency claimed responsibility. DragonForce announced that "
+      "RansomHub had \"moved\" to its new cartel infrastructure, and researchers reported affiliates moving to Qilin and "
+      "former RansomHub affiliates setting up new brands such as VanHelsing [6]. The pattern is a business failure "
+      "followed by fragmentation."),
+    P("**Judgement.** RansomHub gained more from law enforcement than it lost. Takedowns of its competitors produced its "
+      "rise, internal and competitive pressure produced its fall, and its affiliates carried on under other names. The "
+      "evidence supports treating RaaS brands as disposable wrappers around a persistent workforce of affiliates, a view "
+      "we hold with moderate confidence. The alternative is that a sealed investigation brought about the April 2025 "
+      "collapse. We cannot rule that out, but no source supports it, and DragonForce's public claim points to a market "
       "explanation."),
 ]
 
 S8 = [
     H(2, "8. Risk assessment and recommendations"),
-    P("For an organisation with exposed remote access, flat Active Directory and online backups, the risk "
-      "from RansomHub-style affiliates is high in likelihood and severe in impact. The brand is gone; its affiliates and playbook now "
-      "operate under DragonForce, Qilin and others [6]. Each recommendation is traced to a finding."),
+    P("For an organisation with exposed remote access, a flat Active Directory and backups reachable from the domain, an "
+      "attack by RansomHub-style affiliates is both likely and severe. The brand is gone, but its affiliates and their "
+      "playbook now work under DragonForce, Qilin and others [6]. Each recommendation below traces back to a finding in "
+      "this report."),
     H(3, "Detection"),
-    B("Alert on bursts of failed RDP logons (Event 4625) followed by a successful 4624 type 10 from the same external source. "
-      "This would have caught the four-hour spray on day 1 (Section 2) [2]."),
-    B("Alert on DCSync (Event 4662 with replication GUIDs) from non-domain-controller hosts, and on LSASS access (Sysmon 10). "
-      "The affiliate ran Mimikatz DCSync per child domain on day 1 [2]."),
-    B("Alert on Rclone execution, on rclone.conf creation, and on SSH/SFTP sessions on port 443 to non-corporate hosts. "
-      "The 2.03 GB theft on day 3 used exactly this [2]."),
-    B("Treat new installs of RMM tools (Atera, Splashtop, AnyDesk) as alerts unless they are on an approved list. Two "
-      "different RMM tools appeared on backup servers [1][2]."),
+    B("Alert on a burst of failed RDP logons (Event 4625) followed by a successful type 10 logon (4624) from the same "
+      "external source, which would have caught the four-hour spray on day 1 (Section 2) [2]."),
+    B("Alert on DCSync (Event 4662 with replication GUIDs) from hosts that are not domain controllers, and on LSASS access "
+      "(Sysmon 10); the affiliate ran Mimikatz DCSync against each child domain on day 1 [2]."),
+    B("Alert on Rclone execution, on creation of rclone.conf, and on SSH or SFTP sessions on port 443 to non-corporate "
+      "hosts, the exact pattern of the 2.03 GB theft on day 3 [2]."),
+    B("Treat any new install of an RMM tool (Atera, Splashtop, AnyDesk) as an alert unless it is on an approved list. Two "
+      "different RMM tools appeared on the backup servers in our case [1][2]."),
     H(3, "Incident response"),
-    B("Assume exfiltration before encryption. The encryptor does not steal data, so IR must look for the separate affiliate "
-      "tool (Rclone, WinSCP, PuTTY) and quantify what left [1]."),
-    B("Hunt for every random six-letter service (Event 7045) and remote copies of the binary over SMB, to scope the spread "
-      "[2]. Collect memory early: the rclone configuration in this case was recovered only from memory [2]."),
-    B("Build the negotiation plan on the documented tactics. Verify claimed data volumes against your own logs before "
-      "responding. Christie's and Frontier showed claims inflated more than tenfold [11][12]. Treat a deadline as a "
-      "pressure tactic, not a decryption limit."),
+    B("Assume data left before encryption. The encryptor steals nothing, so responders need to find the affiliate's "
+      "separate tool (Rclone, WinSCP or PuTTY) and measure what was taken [1]."),
+    B("Hunt for every randomly named six-letter service (Event 7045) and every remote copy of the binary over SMB to scope "
+      "the spread [2], and capture memory early, because the Rclone configuration in this case survived only there [2]."),
+    B("Base the negotiation plan on the documented tactics. Check claimed data volumes against your own logs before "
+      "replying, since the Christie's and Frontier claims were inflated more than tenfold [11][12], and treat a deadline as "
+      "a pressure tactic, not a decryption limit."),
     H(3, "Mitigation"),
-    B("Remove internet-facing RDP, or put it behind a VPN with phishing-resistant MFA. This closes the access path in our "
-      "case and CISA's password-spray vector [1][2]."),
+    B("Take RDP off the internet or put it behind a VPN with phishing-resistant MFA, which closes both the access path in "
+      "our case and CISA's password-spray vector [1][2]."),
     B("Patch the edge CVEs CISA lists (Citrix CVE-2023-3519, FortiOS CVE-2023-27997, Confluence CVE-2023-22515, BIG-IP "
-      "CVE-2023-46747, ActiveMQ CVE-2023-46604) and keep the Microsoft vulnerable-driver blocklist on to blunt "
+      "CVE-2023-46747, ActiveMQ CVE-2023-46604) and keep Microsoft's vulnerable-driver blocklist enabled against "
       "EDRKillShifter [1][4]."),
-    B("Use tiered administration so that a domain-admin credential is not usable on workstations and backup servers. "
-      "In our case a single compromised account led to every tier [2]."),
+    B("Use tiered administration so that a domain-admin credential cannot be used on workstations or backup servers; in "
+      "our case one compromised account reached every tier [2]."),
     H(3, "Organisational resilience"),
-    B("Keep immutable, offline backups and separate backup credentials from the domain. The affiliate staged its "
-      "exfiltration script in the Veeam directory and deleted shadow copies [2]."),
-    B("Have leadership decide the payment and legal-notification policy in advance. RansomHub's leverage depends on "
-      "regulatory exposure (healthcare re-extortion) and on time pressure (3 to 90 day deadlines) [1][14]."),
-    B("Track affiliates, not brands. Assumptions tied to \"RansomHub\" expired on 1 April 2025; "
-      "the tradecraft did not [6]."),
+    B("Keep immutable offline backups, with backup credentials kept out of the domain. The affiliate staged its "
+      "exfiltration script in the Veeam directory and deleted the shadow copies [2]."),
+    B("Have leadership settle the payment and legal-notification policy in advance, because RansomHub's leverage came "
+      "from regulatory exposure (the healthcare re-extortion) and from time pressure (3 to 90 day deadlines) [1][14]."),
+    B("Track affiliates, not brands. Assumptions tied to \"RansomHub\" expired on 1 April 2025, but the tradecraft did "
+      "not [6]."),
 ]
 
 APPENDIX = [
